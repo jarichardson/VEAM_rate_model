@@ -92,9 +92,9 @@ def derivative(function):
 
 
 #Get a list of events x 10k sets of potential ages
-#MCdata = np.loadtxt("veam-results_arsia-mons_1klist.dat",skiprows=1,delimiter=",")
+MCdata = np.loadtxt("veam-results_arsia-mons_1klist.dat",skiprows=1,delimiter=",")
 
-MCdata = np.loadtxt("ignore_strat_ASCII-1klist.txt",skiprows=1,delimiter=",")
+#MCdata = np.loadtxt("ignore_strat_ASCII-1klist.txt",skiprows=1,delimiter=",")
 
 (MCsets,eventCount) = np.shape(MCdata)
 print "Loaded MC dataset"
