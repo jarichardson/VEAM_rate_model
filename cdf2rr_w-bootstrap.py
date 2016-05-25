@@ -92,9 +92,9 @@ def derivative(function):
 
 
 #Get a list of events x 10k sets of potential ages
-MCdata = np.loadtxt("veam-results_arsia-mons_1klist.dat",skiprows=1,delimiter=",")
+#MCdata = np.loadtxt("veam-results_arsia-mons_1klist.dat",skiprows=1,delimiter=",")
 
-#MCdata = np.loadtxt("ignore_strat_ASCII-1klist.txt",skiprows=1,delimiter=",")
+MCdata = np.loadtxt(sys.argv[1],skiprows=1,delimiter=",")
 
 (MCsets,eventCount) = np.shape(MCdata)
 print "Loaded MC dataset"
@@ -104,9 +104,11 @@ tmax = 500
 tmin = 0
 time5 = np.arange(tmin,tmax,tstp)
 
+#################CUMULATIVE   UNCERTAINTY#######################
+print "\n\n         ~~~~~~~~CDF of event count~~~~~~~~~"
+#mean CDF of MC solutions
+#CDF_all = np.load("CDF_each.npy")
 
-#################RECURRENCE RATE UNCERTAINTY#######################
-print "\n\n         ~~~~~~~~Event RR~~~~~~~~~"
 CDF_each = np.zeros(( MCsets,len(time5) ))
 for i in range(len(MCdata)):
 	CDF_each[i] = cumulative_function(MCdata[i:(i+1)],time5)
@@ -116,25 +118,35 @@ for i in range(len(MCdata)):
 #CDF_each = np.load("CDF_each5.npy")
 print "Found cumulative event functions for each MC solution"
 
+
+#################RECURRENCE RATE UNCERTAINTY#######################
+print "\n\n         ~~~~~~~~Event RR~~~~~~~~~"
+
 #"sawtooth" of each MC sol'n
 RR_each = np.zeros(( MCsets,len(time5) ))
 for i,s in enumerate(CDF_each):
 	RR_each[i] = derivative(s)/tstp
 
+print "max RR:             ",np.max(RR_each)
+print "min RR:             ",np.min(RR_each)
+print "integrated mean RR: ",np.sum(np.mean(RR_each,axis=0))*tstp
 
-#################CUMULATIVE   UNCERTAINTY#######################
-print "\n\n         ~~~~~~~~CDF of event count~~~~~~~~~"
-#mean CDF of MC solutions
-#CDF_all = np.load("CDF_each.npy")
+
 
 
 #################CUMULATIVE VOLUME UNCERTAINTY#####################
 print "\n\n         ~~~~~~~~Incorporating Volumes~~~~~~~~~"
 volumes = np.loadtxt("edifice-area_sorted-as-veam.dat",skiprows=1)
+flow_thickness = 0.01 # km
+volumes *= flow_thickness
+
+print "Flow thickness assumed to be ",flow_thickness," km."
 
 cum_vols = np.zeros(( MCsets,len(time5) ))
 for i in range(MCsets):
 	cum_vols[i] = cumulative_volume(MCdata[i],time5,volumes)
+	
+print "Total volume: ",np.max(cum_vols),np.sum(volumes), "(should be same no.)"
 
 
 #################VOLUME FLUX UNCERTAINTY#####################
@@ -151,7 +163,9 @@ VF_each = np.zeros(( MCsets,len(time5) ))
 for i,s in enumerate(cum_vols):
 	VF_each[i] = derivative(s)/tstp
 
-
+print "max VF:             ",np.max(VF_each)
+print "min VF:             ",np.min(VF_each)
+print "integrated mean VF: ",np.sum(np.mean(VF_each,axis=0))*tstp
 
 
 #################CHARTS#####################
@@ -161,6 +175,7 @@ plt.figure(1)
 xlimit = [0,350]
 
 ###########CDF CHART#############
+print "cumulative events"
 plt.subplot(221)
 
 for i in range(1000):
@@ -180,6 +195,7 @@ plt.legend(loc='upper left')
 
 
 ########RR CHART################
+print "recurrence rate"
 plt.subplot(222)
 for i in range(1000):
 	plt.plot(time5,RR_each[i],c='0.95')
@@ -189,6 +205,7 @@ plt.plot(time5,np.percentile(RR_each, 90, axis=0),c='r',ls='--',label="90%")
 
 #Chart attributes
 plt.xlim(xlimit)
+plt.ylim([0,1.0])
 plt.gca().invert_xaxis()
 plt.ylabel('Events per Myr')
 plt.xlabel('Ma before present')
@@ -196,24 +213,26 @@ plt.title('Recurrence Rate')
 plt.legend(loc='upper left')
 
 ###########CUM_V CHART###########
+print "cumulative volume"
 plt.subplot(223)
 
 for i in range(1000):
 	plt.plot(time5,cum_vols[i],c='0.95')
-plt.plot(time5,np.mean(cum_vols, axis=0),c='r',label='Mean Cumulative "Volume" Erupted')
+plt.plot(time5,np.mean(cum_vols, axis=0),c='r',label='Mean Cumulative Volume')
 plt.plot(time5,np.percentile(cum_vols, 10, axis=0),c='r',ls='--',label='10%')
 plt.plot(time5,np.percentile(cum_vols, 90, axis=0),c='r',ls='--',label='90%')
 
 #Chart attributes
 plt.xlim(xlimit)
 plt.gca().invert_xaxis()
-plt.ylabel('Cumulative "Volume"')
+plt.ylabel('Cumulative Volume, km^3')
 plt.xlabel('Ma before present')
-plt.title('Total "Volume" Erupted')
+plt.title('Total volume erupted, with %0.2f km thick flows' % flow_thickness)
 plt.legend(loc='upper left')
 
 
 ###########VF CHART###########
+print "volume flux"
 plt.subplot(224)
 
 for i in range(1000):
@@ -225,9 +244,9 @@ plt.plot(time5,np.percentile(VF_each, 90, axis=0),c='r',ls='--',label="90%")
 #Chart attributes
 plt.xlim(xlimit)
 plt.gca().invert_xaxis()
-plt.ylabel('km^2 per Myr')
+plt.ylabel('km^3 per Myr')
 plt.xlabel('Ma before present')
-plt.title('\"Volume\" Flux')
+plt.title('Volume Flux, with %0.2f km thick flows' % flow_thickness)
 plt.legend(loc='upper left')
 
 
